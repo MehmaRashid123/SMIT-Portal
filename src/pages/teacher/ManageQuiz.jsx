@@ -46,12 +46,12 @@ export default function ManageQuiz() {
 
   return (
     <PortalLayout links={NAV} accentColor={G}>
-      <div className="p-6 max-w-5xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-extrabold text-gray-900">Quizzes</h1>
+      <div className="p-4 sm:p-6 max-w-5xl mx-auto">
+        <div className="flex items-center justify-between mb-6 gap-3">
+          <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900">Quizzes</h1>
           <button onClick={() => setShowModal(true)}
-            style={{ background:G }} className="text-white font-semibold px-5 py-2.5 rounded-xl text-sm hover:opacity-90 transition-opacity">
-            + Create Quiz
+            style={{ background:G }} className="text-white font-semibold px-4 py-2.5 rounded-xl text-sm hover:opacity-90 transition-opacity whitespace-nowrap">
+            + Create
           </button>
         </div>
 
@@ -75,7 +75,7 @@ export default function ManageQuiz() {
       {showModal && (
         <Modal title="Create New Quiz" onClose={() => setShowModal(false)}>
           <form onSubmit={handleSave} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Quiz Title</label>
                 <input required className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-green-400"

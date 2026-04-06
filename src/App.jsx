@@ -17,7 +17,8 @@ const Campus      = lazy(() => import('./pages/Campus'))
 const CheckResult = lazy(() => import('./pages/CheckResult'))
 const EntryTest   = lazy(() => import('./pages/EntryTest'))
 
-// Student
+const CourseEnroll = lazy(() => import('./pages/CourseEnroll'))
+
 const StudentDashboard   = lazy(() => import('./pages/student/Dashboard'))
 const StudentLeaves      = lazy(() => import('./pages/student/Leaves'))
 const StudentAssignments = lazy(() => import('./pages/student/Assignments'))
@@ -71,6 +72,7 @@ export default function App() {
           <Route path="/campus"   element={<><Navbar /><div className="pt-16"><Campus /></div><Footer /></>} />
           <Route path="/result"   element={<><Navbar /><div className="pt-16"><CheckResult /></div><Footer /></>} />
           <Route path="/entry-test" element={<EntryTest />} />
+          <Route path="/enroll"     element={<CourseEnroll />} />
 
           {/* Student */}
           <Route path="/student"             element={S('student', <StudentDashboard />)} />

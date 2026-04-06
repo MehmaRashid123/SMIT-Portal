@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import PortalLayout from '../../components/PortalLayout'
-import { fetchAllEnrollments } from '../../store/slices/enrollmentSlice'
+import { fetchEnrollmentsByTeacher } from '../../store/slices/enrollmentSlice'
 
 const G = '#0e9f6e'
 const NAV = [
@@ -14,37 +14,50 @@ const NAV = [
 
 export default function TeacherStudents() {
   const dispatch = useDispatch()
+  const { user } = useSelector(s => s.auth)
   const { all: enrollments, loading } = useSelector(s => s.enrollment)
 
-  useEffect(() => { dispatch(fetchAllEnrollments()) }, [dispatch])
+  useEffect(() => {
+    if (user?.id) dispatch(fetchEnrollmentsByTeacher(user.id))
+  }, [dispatch, user])
 
   return (
     <PortalLayout links={NAV} accentColor={G}>
-      <div className="p-6 max-w-5xl mx-auto">
-        <h1 className="text-2xl font-extrabold text-gray-900 mb-6">My Students ({enrollments.length})</h1>
+      <div className="p-4 sm:p-6 max-w-5xl mx-auto">
+        <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 mb-1">My Students</h1>
+        <p className="text-sm text-gray-400 mb-6">{enrollments.length} students enrolled in your class</p>
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-100">
-              <tr>{['Name','Roll No','CNIC','Course','Campus'].map(h=>(
-                <th key={h} className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wide">{h}</th>
-              ))}</tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={5} className="text-center py-12 text-gray-400">Loading...</td></tr>
-              ) : enrollments.length === 0 ? (
-                <tr><td colSpan={5} className="text-center py-12 text-gray-400">No students enrolled yet.</td></tr>
-              ) : enrollments.map(e => (
-                <tr key={e.id} className="border-t border-gray-50 hover:bg-gray-50">
-                  <td className="px-4 py-3 font-semibold text-gray-800">{e.students?.name || '—'}</td>
-                  <td className="px-4 py-3 text-gray-500">{e.students?.roll_number || '—'}</td>
-                  <td className="px-4 py-3 text-gray-500 font-mono text-xs">{e.students?.cnic || '—'}</td>
-                  <td className="px-4 py-3 text-gray-600 max-w-[150px] truncate">{e.courses?.name || '—'}</td>
-                  <td className="px-4 py-3 text-gray-500">{e.campus || '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[500px]">
+              <thead className="bg-gray-50 border-b border-gray-100">
+                <tr>{['Name','Roll No','Course','Slot'].map(h=>(
+                  <th key={h} className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wide">{h}</th>
+                ))}</tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={4} className="text-center py-12 text-gray-400">Loading...</td></tr>
+                ) : enrollments.length === 0 ? (
+                  <tr><td colSpan={4} className="text-center py-12 text-gray-400">No students enrolled in your class yet.</td></tr>
+                ) : enrollments.map(e => (
+                  <tr key={e.id} className="border-t border-gray-50 hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                          style={{ background: G }}>
+                          {(e.students?.name||'?').charAt(0).toUpperCase()}
+                        </div>
+                        <span className="font-semibold text-gray-800">{e.students?.name || '—'}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 text-xs font-mono">{e.students?.roll_number || '—'}</td>
+                    <td className="px-4 py-3 text-gray-600 max-w-[150px] truncate">{e.courses?.name || '—'}</td>
+                    <td className="px-4 py-3 text-xs text-gray-500">{e.slot || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </PortalLayout>

@@ -48,7 +48,7 @@ export default function EntryTest() {
       .from('registrations')
       .select('*')
       .eq('id_number', cnicInput.trim())
-      .single()
+      .maybeSingle()
 
     if (error || !reg) {
       toast.error('No registration found with this CNIC. Please register first.')
@@ -76,13 +76,27 @@ export default function EntryTest() {
       .from('entry_test_results')
       .select('*')
       .eq('cnic', cnicInput.trim())
-      .single()
+      .maybeSingle()
 
-    if (existing && existing.status !== 'pending') {
-      setResult(existing)
-      setRegData(reg)
-      setPhase('result')
-      setVerifying(false); return
+    if (existing) {
+      if (existing.status === 'pass') {
+        setResult(existing)
+        setRegData(reg)
+        setPhase('result')
+        setVerifying(false); return
+      }
+      if (existing.status === 'fail' && !existing.allow_retest) {
+        setRegData(reg)
+        setResult(existing)
+        setPhase('retest_blocked')
+        setVerifying(false); return
+      }
+      // allow_retest is true — reset and let them retake
+      if (existing.allow_retest) {
+        await supabase.from('entry_test_results')
+          .update({ allow_retest: false, status: 'pending' })
+          .eq('cnic', cnicInput.trim())
+      }
     }
 
     setRegData(reg)
@@ -112,25 +126,37 @@ export default function EntryTest() {
     const pct    = Math.round(score / TOTAL_Q * 100)
     const status = pct >= PASS_PCT ? 'pass' : 'fail'
 
-    const { data: res, error } = await supabase
-      .from('entry_test_results')
-      .upsert([{
-        registration_id: regData.id,
-        cnic:            regData.id_number,
-        full_name:       regData.full_name,
-        score,
-        total:           TOTAL_Q,
-        status,
-        attempted_at:    new Date().toISOString(),
-      }], { onConflict: 'cnic' })
-      .select().single()
+    const payload = {
+      registration_id: regData.id,
+      cnic:            regData.id_number,
+      full_name:       regData.full_name,
+      score,
+      total:           TOTAL_Q,
+      status,
+      attempted_at:    new Date().toISOString(),
+    }
+
+    // Check if record exists — insert or update accordingly
+    const { data: existingResult } = await supabase
+      .from('entry_test_results').select('id').eq('cnic', regData.id_number).maybeSingle()
+
+    let res
+    if (existingResult) {
+      const { data } = await supabase.from('entry_test_results')
+        .update(payload).eq('id', existingResult.id).select().single()
+      res = data
+    } else {
+      const { data } = await supabase.from('entry_test_results')
+        .insert([payload]).select().single()
+      res = data
+    }
 
     // Update registration entry_test_status
     await supabase.from('registrations').update({ entry_test_status: status }).eq('id', regData.id)
 
     // If passed → create student record
     if (status === 'pass') {
-      const { data: existing } = await supabase.from('students').select('id').eq('cnic', regData.id_number).single()
+      const { data: existing } = await supabase.from('students').select('id').eq('cnic', regData.id_number).maybeSingle()
       if (!existing) {
         const roll = `SMIT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
         await supabase.from('students').insert([{
@@ -199,6 +225,22 @@ export default function EntryTest() {
             {new Date(regData?.test_date).toLocaleDateString('en-PK', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
           </strong>
           . Please come back on that date.
+        </span>
+      }
+    />
+  )
+
+  if (phase === 'retest_blocked') return (
+    <BlockScreen
+      icon="🚫"
+      color="linear-gradient(90deg,#ef4444,#f87171)"
+      title="Re-Test Not Allowed"
+      subtitle={`Hi ${regData?.full_name}, you have already attempted the entry test.`}
+      detail={
+        <span>
+          Your score was <strong>{result?.score}/{result?.total}</strong> ({result?.total > 0 ? Math.round(result.score/result.total*100) : 0}%) — below the passing mark of 70%.
+          <br/><br/>
+          Please contact admin to request a re-test.
         </span>
       }
     />
@@ -412,15 +454,15 @@ export default function EntryTest() {
           {passed ? (
             <div className="space-y-3">
               <p className="text-xs text-gray-400 mb-3">
-                You passed! Set your password to access the student portal.
+                You passed! Now select your course and teacher to complete enrollment.
               </p>
-              <Link to="/signup"
+              <Link to="/enroll"
                 style={{ background:BG }}
                 className="block w-full text-white font-bold py-3 rounded-xl text-sm hover:opacity-90 transition-opacity">
-                Set Password & Get ID Card →
+                Select Course & Teacher →
               </Link>
-              <Link to="/result" className="block text-xs text-gray-400 hover:underline">
-                Check result later at /result
+              <Link to="/signup" className="block text-xs text-center text-gray-400 hover:underline">
+                Already enrolled? Set password here
               </Link>
             </div>
           ) : (

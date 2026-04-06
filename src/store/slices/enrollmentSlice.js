@@ -13,7 +13,17 @@ export const fetchEnrollments = createAsyncThunk('enrollment/fetch', async (stud
 export const fetchAllEnrollments = createAsyncThunk('enrollment/fetchAll', async (_, { rejectWithValue }) => {
   const { data, error } = await supabase
     .from('enrollments')
+    .select('*, students(name,cnic,roll_number), courses(name), teachers(name,slot)')
+    .order('created_at', { ascending: false })
+  if (error) return rejectWithValue(error.message)
+  return data
+})
+
+export const fetchEnrollmentsByTeacher = createAsyncThunk('enrollment/fetchByTeacher', async (teacherId, { rejectWithValue }) => {
+  const { data, error } = await supabase
+    .from('enrollments')
     .select('*, students(name,cnic,roll_number), courses(name)')
+    .eq('teacher_id', teacherId)
     .order('created_at', { ascending: false })
   if (error) return rejectWithValue(error.message)
   return data
@@ -34,6 +44,7 @@ const enrollmentSlice = createSlice({
      .addCase(fetchEnrollments.fulfilled,  (s, a) => { s.loading = false; s.list = a.payload })
      .addCase(fetchEnrollments.rejected,   (s, a) => { s.loading = false; s.error = a.payload })
      .addCase(fetchAllEnrollments.fulfilled,(s,a) => { s.all = a.payload })
+     .addCase(fetchEnrollmentsByTeacher.fulfilled,(s,a) => { s.all = a.payload })
      .addCase(addEnrollment.fulfilled,     (s, a) => { s.all.unshift(a.payload) })
   },
 })

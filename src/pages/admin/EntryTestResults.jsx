@@ -20,12 +20,13 @@ export default function AdminEntryTestResults() {
       .select('*')
       .order('attempted_at', { ascending: false })
     setLoading(false)
-    if (!error) setResults(data || [])
+    if (error) { console.error('Fetch error:', error.message); return }
+    setResults(data || [])
   }
 
   const overrideStatus = async (id, cnic, regId, status) => {
     setUpdating(id)
-    await supabase.from('entry_test_results').update({ status }).eq('id', id)
+    await supabase.from('entry_test_results').update({ status, allow_retest: false }).eq('id', id)
     await supabase.from('registrations').update({ entry_test_status: status }).eq('id', regId)
 
     if (status === 'pass') {
@@ -42,8 +43,15 @@ export default function AdminEntryTestResults() {
     } else {
       toast.success('Status updated to FAIL')
     }
+    setResults(r => r.map(x => x.id === id ? { ...x, status, allow_retest: false } : x))
+    setUpdating(null)
+  }
 
-    setResults(r => r.map(x => x.id === id ? { ...x, status } : x))
+  const allowRetest = async (id) => {
+    setUpdating(id)
+    await supabase.from('entry_test_results').update({ allow_retest: true }).eq('id', id)
+    toast.success('Re-test allowed!')
+    setResults(r => r.map(x => x.id === id ? { ...x, allow_retest: true } : x))
     setUpdating(null)
   }
 
@@ -89,9 +97,10 @@ export default function AdminEntryTestResults() {
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[700px]">
             <thead className="bg-gray-50 border-b border-gray-100">
-              <tr>{['Name','CNIC','Score','Percentage','Date','Status','Override'].map(h=>(
+              <tr>{['Name','CNIC','Score','%','Date','Status','Actions'].map(h=>(
                 <th key={h} className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wide">{h}</th>
               ))}</tr>
             </thead>
@@ -108,35 +117,45 @@ export default function AdminEntryTestResults() {
                     <td className="px-4 py-3 text-gray-500 font-mono text-xs">{r.cnic}</td>
                     <td className="px-4 py-3 text-gray-600">{r.score}/{r.total}</td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 bg-gray-100 rounded-full h-1.5">
-                          <div className="h-1.5 rounded-full" style={{ width:`${pct}%`, background: pct>=70?'#0e9f6e':'#ef4444' }}/>
-                        </div>
-                        <span className="text-xs font-semibold" style={{ color: pct>=70?'#0e9f6e':'#ef4444' }}>{pct}%</span>
-                      </div>
+                      <span className="text-xs font-semibold" style={{ color: pct>=70?'#0e9f6e':'#ef4444' }}>{pct}%</span>
                     </td>
                     <td className="px-4 py-3 text-gray-400 text-xs">
                       {r.attempted_at ? new Date(r.attempted_at).toLocaleDateString() : '—'}
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs px-2.5 py-1 rounded-full font-semibold capitalize ${STATUS[r.status]||'bg-gray-100 text-gray-500'}`}>
-                        {r.status}
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className={`text-xs px-2.5 py-1 rounded-full font-semibold capitalize w-fit ${STATUS[r.status]||'bg-gray-100 text-gray-500'}`}>
+                          {r.status}
+                        </span>
+                        {r.allow_retest && (
+                          <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-purple-100 text-purple-700 w-fit">
+                            Retest Allowed
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 flex-wrap">
                         <button disabled={updating===r.id || r.status==='pass'}
                           onClick={() => overrideStatus(r.id, r.cnic, r.registration_id, 'pass')}
-                          className="text-xs px-2 py-1 rounded-lg font-semibold disabled:opacity-40 transition-colors"
+                          className="text-xs px-2 py-1 rounded-lg font-semibold disabled:opacity-40"
                           style={{ background:'#dcfce7', color:'#166534' }}>
                           Pass
                         </button>
                         <button disabled={updating===r.id || r.status==='fail'}
                           onClick={() => overrideStatus(r.id, r.cnic, r.registration_id, 'fail')}
-                          className="text-xs px-2 py-1 rounded-lg font-semibold disabled:opacity-40 transition-colors"
+                          className="text-xs px-2 py-1 rounded-lg font-semibold disabled:opacity-40"
                           style={{ background:'#fee2e2', color:'#991b1b' }}>
                           Fail
                         </button>
+                        {r.status === 'fail' && !r.allow_retest && (
+                          <button disabled={updating===r.id}
+                            onClick={() => allowRetest(r.id)}
+                            className="text-xs px-2 py-1 rounded-lg font-semibold disabled:opacity-40"
+                            style={{ background:'#f3e8ff', color:'#7c3aed' }}>
+                            Allow Retest
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -144,6 +163,7 @@ export default function AdminEntryTestResults() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </AdminLayout>

@@ -16,7 +16,7 @@ export default function ScanAttendance() {
 
   return (
     <PortalLayout links={NAV} accentColor={G}>
-      <div className="p-6 max-w-2xl mx-auto">
+      <div className="p-4 sm:p-6 max-w-2xl mx-auto">
         <h1 className="text-2xl font-extrabold text-gray-900 mb-2">QR Attendance</h1>
         <p className="text-sm text-gray-400 mb-8">Scan student ID cards to mark attendance</p>
 
