@@ -44,7 +44,7 @@ export default function QRScanner({ onClose }) {
       .select('id')
       .eq('student_id', data.id)
       .eq('date', today)
-      .single()
+      .maybeSingle()
 
     if (existing) {
       toast('Already marked today!', { icon:'ℹ️' })
@@ -54,9 +54,17 @@ export default function QRScanner({ onClose }) {
       return
     }
 
+    // Get course_id from enrollment if not in QR
+    let courseId = data.course_id
+    if (!courseId) {
+      const { data: enroll } = await supabase
+        .from('enrollments').select('course_id').eq('student_id', data.id).maybeSingle()
+      courseId = enroll?.course_id || null
+    }
+
     const { error } = await supabase.from('attendance').insert([{
       student_id: data.id,
-      course_id:  data.course_id,
+      course_id:  courseId,
       date:       today,
       status:     'present',
       marked_by:  'qr',
@@ -64,7 +72,8 @@ export default function QRScanner({ onClose }) {
 
     setMarking(false)
     if (error) {
-      toast.error('Failed to mark attendance')
+      console.error('Attendance error:', error.message)
+      toast.error('Failed: ' + error.message)
     } else {
       toast.success(`✓ ${data.name} — Present!`)
       const record = { ...data, status:'present', time: new Date().toLocaleTimeString() }
