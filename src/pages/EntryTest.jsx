@@ -55,17 +55,21 @@ export default function EntryTest() {
       setVerifying(false); return
     }
     if (reg.status !== 'approved') {
-      toast.error('Your registration is not approved yet. Please wait for admin approval.')
+      setRegData(reg)
+      setPhase('not_approved')
       setVerifying(false); return
     }
     // Check test date — student cannot take test before scheduled date
-    if (reg.test_date) {
-      const today    = new Date().toISOString().split('T')[0]
-      const testDate = reg.test_date
-      if (today < testDate) {
-        toast.error(`Your entry test is scheduled for ${testDate}. You cannot take it before that date.`)
-        setVerifying(false); return
-      }
+    if (!reg.test_date) {
+      setRegData(reg)
+      setPhase('no_date')
+      setVerifying(false); return
+    }
+    const today = new Date().toISOString().split('T')[0]
+    if (today < reg.test_date) {
+      setRegData(reg)
+      setPhase('too_early')
+      setVerifying(false); return
     }
     // Check if already attempted
     const { data: existing } = await supabase
@@ -141,6 +145,64 @@ export default function EntryTest() {
     setSubmitting(false)
     setPhase('result')
   }
+
+  // ── BLOCKED SCREENS ──
+  const BlockScreen = ({ icon, title, subtitle, detail, color }) => (
+    <div className="min-h-screen flex items-center justify-center px-4"
+      style={{ background:'linear-gradient(150deg,#eef6fd,#e4f1fb,#f4faff)' }}>
+      <div className="bg-white rounded-3xl shadow-2xl p-10 w-full max-w-md text-center">
+        <div style={{ height:4, background:color, borderRadius:'4px 4px 0 0', margin:'-40px -40px 32px' }}/>
+        <div className="text-6xl mb-4">{icon}</div>
+        <h2 className="text-2xl font-extrabold text-gray-900 mb-2">{title}</h2>
+        <p className="text-gray-500 text-sm mb-4">{subtitle}</p>
+        {detail && (
+          <div className="bg-gray-50 rounded-2xl p-4 text-sm text-gray-600 mb-6">{detail}</div>
+        )}
+        <button onClick={() => { setPhase('verify'); setRegData(null) }}
+          className="w-full py-3 rounded-xl border-2 text-sm font-bold transition-colors hover:bg-gray-50"
+          style={{ borderColor:'#e5e7eb', color:'#374151' }}>
+          ← Try Again
+        </button>
+      </div>
+    </div>
+  )
+
+  if (phase === 'not_approved') return (
+    <BlockScreen
+      icon="✅"
+      color="linear-gradient(90deg,#0B73B7,#0a9e6e)"
+      title="Registration Successful!"
+      subtitle={`Hi ${regData?.full_name}, your registration has been received.`}
+      detail="Your entry test has not been scheduled yet. Once the admin approves your application, you will receive an email with your test date."
+    />
+  )
+
+  if (phase === 'no_date') return (
+    <BlockScreen
+      icon="📅"
+      color="linear-gradient(90deg,#0B73B7,#0a5f9a)"
+      title="Test Not Scheduled Yet"
+      subtitle={`Hi ${regData?.full_name}, your entry test has not been scheduled yet.`}
+      detail="Admin will assign a test date soon. You will receive an email with your test schedule."
+    />
+  )
+
+  if (phase === 'too_early') return (
+    <BlockScreen
+      icon="🔒"
+      color="linear-gradient(90deg,#8b5cf6,#7c3aed)"
+      title="Test Not Available Yet"
+      subtitle={`Hi ${regData?.full_name}, your test is scheduled but the date hasn't arrived.`}
+      detail={
+        <span>Your entry test is scheduled for{' '}
+          <strong className="text-purple-700">
+            {new Date(regData?.test_date).toLocaleDateString('en-PK', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
+          </strong>
+          . Please come back on that date.
+        </span>
+      }
+    />
+  )
 
   // ── VERIFY PHASE ──
   if (phase === 'verify') return (

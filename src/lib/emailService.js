@@ -27,21 +27,19 @@ export async function sendTestScheduleEmail({ toEmail, toName, testDate, courseN
   }
   try {
     const emailjs = await import('@emailjs/browser')
-    const result = await emailjs.send(
-      SERVICE_ID,
-      TEMPLATE_ID,
-      {
-        to_email:    toEmail,
-        to_name:     toName,
-        test_date:   new Date(testDate).toLocaleDateString('en-PK', { weekday:'long', year:'numeric', month:'long', day:'numeric' }),
-        course_name: courseName,
-        test_link:   `${window.location.origin}/entry-test`,
-      },
-      PUBLIC_KEY
-    )
+    const params = {
+      to_email:    toEmail,
+      to_name:     toName,
+      test_date:   new Date(testDate).toLocaleDateString('en-PK', { weekday:'long', year:'numeric', month:'long', day:'numeric' }),
+      course_name: courseName,
+      test_link:   `${window.location.origin}/entry-test`,
+    }
+    console.log('Sending email with:', { SERVICE_ID, TEMPLATE_ID, PUBLIC_KEY, params })
+    const result = await emailjs.send(SERVICE_ID, TEMPLATE_ID, params, PUBLIC_KEY)
+    console.log('Email result:', result)
     return { success: true, result }
   } catch (err) {
-    console.error('Email error:', err)
-    return { success: false, error: err.message }
+    console.error('Email error full:', err)
+    return { success: false, error: err?.text || err?.message || JSON.stringify(err) }
   }
 }
