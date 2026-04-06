@@ -192,7 +192,7 @@ export default function Navbar() {
                                   </p>
                                   <div className="space-y-0.5">
                                     {grouped[cat].slice(0,4).map(c => (
-                                      <Link key={c.id} to="/courses"
+                                      <Link key={c.id} to={c.status === 'open' ? `/register?course=${c.id}` : '/courses'}
                                         onClick={() => setMegaOpen(false)}
                                         className="mega-course-item">
                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
@@ -201,6 +201,7 @@ export default function Navbar() {
                                             d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
                                         </svg>
                                         <span className="truncate">{c.name}</span>
+                                        {c.status !== 'open' && <span style={{ fontSize:9, color:'#ef4444', marginLeft:'auto', flexShrink:0 }}>Closed</span>}
                                       </Link>
                                     ))}
                                   </div>
@@ -222,7 +223,7 @@ export default function Navbar() {
                               </p>
                               <div className="grid grid-cols-4 gap-3">
                                 {topCourses.map(c => (
-                                  <Link key={c.id} to="/courses"
+                                  <Link key={c.id} to={c.status === 'open' ? `/register?course=${c.id}` : '/courses'}
                                     onClick={() => setMegaOpen(false)}
                                     className="top-course-card">
                                     <div className="top-course-icon">

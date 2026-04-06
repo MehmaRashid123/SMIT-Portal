@@ -12,6 +12,10 @@ const Courses  = lazy(() => import('./pages/Courses'))
 const Login    = lazy(() => import('./pages/Login'))
 const Signup   = lazy(() => import('./pages/Signup'))
 const Register = lazy(() => import('./pages/Register'))
+const About    = lazy(() => import('./pages/About'))
+const Campus      = lazy(() => import('./pages/Campus'))
+const CheckResult = lazy(() => import('./pages/CheckResult'))
+const EntryTest   = lazy(() => import('./pages/EntryTest'))
 
 // Student
 const StudentDashboard   = lazy(() => import('./pages/student/Dashboard'))
@@ -41,6 +45,7 @@ const AdminAttendance    = lazy(() => import('./pages/admin/Attendance'))
 const AdminTeachers      = lazy(() => import('./pages/admin/Teachers'))
 const AdminEnrollments   = lazy(() => import('./pages/admin/Enrollments'))
 const AdminIDCard        = lazy(() => import('./pages/admin/AdminIDCard'))
+const AdminEntryTest     = lazy(() => import('./pages/admin/EntryTestResults'))
 
 const S = (role, el) => <ProtectedRoute requiredRole={role}>{el}</ProtectedRoute>
 
@@ -62,6 +67,10 @@ export default function App() {
           <Route path="/login"   element={<><Navbar /><div className="pt-16"><Login /></div></>} />
           <Route path="/signup"  element={<><Navbar /><div className="pt-16"><Signup /></div></>} />
           <Route path="/register" element={<Register />} />
+          <Route path="/about"    element={<><Navbar /><div className="pt-16"><About /></div><Footer /></>} />
+          <Route path="/campus"   element={<><Navbar /><div className="pt-16"><Campus /></div><Footer /></>} />
+          <Route path="/result"   element={<><Navbar /><div className="pt-16"><CheckResult /></div><Footer /></>} />
+          <Route path="/entry-test" element={<EntryTest />} />
 
           {/* Student */}
           <Route path="/student"             element={S('student', <StudentDashboard />)} />
@@ -91,6 +100,7 @@ export default function App() {
           <Route path="/admin/leaves"        element={S('admin', <AdminLeaves />)} />
           <Route path="/admin/settings"      element={S('admin', <AdminSettings />)} />
           <Route path="/admin/idcard"        element={S('admin', <AdminIDCard />)} />
+          <Route path="/admin/entry-test"    element={S('admin', <AdminEntryTest />)} />
         </Routes>
       </Suspense>
     </BrowserRouter>

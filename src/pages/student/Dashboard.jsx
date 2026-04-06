@@ -74,7 +74,7 @@ export default function StudentDashboard() {
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
                 <div>
-                  <p className="text-2xl font-extrabold text-gray-800">67/114</p>
+                  <p className="text-2xl font-extrabold text-gray-800">—</p>
                   <p className="text-sm text-gray-400 mt-1">Attendance</p>
                 </div>
                 <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background:'#e8faf4' }}>

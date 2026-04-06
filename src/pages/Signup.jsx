@@ -21,7 +21,6 @@ export default function Signup() {
     setLocalError('')
     const result = await dispatch(setStudentPassword({ cnic: form.cnic, newPassword: form.password }))
     if (result.error) return
-
     const student = result.payload
 
     // Fetch registration picture + course info

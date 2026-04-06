@@ -97,13 +97,23 @@ export default function Register() {
           </svg>
         </div>
         <h2 className="text-2xl font-extrabold text-gray-900 mb-2">Application Submitted!</h2>
-        <p className="text-gray-400 text-sm mb-8 leading-relaxed">
-          Your registration has been received.<br/>Admin will review and approve your application.<br/>
-          You'll receive your Roll Number after approval.
+        <p className="text-gray-400 text-sm mb-6 leading-relaxed">
+          Your registration has been received.<br/>
+          Admin will review and <strong>approve your application</strong>.<br/>
+          After approval, you'll receive a link to take the <strong>Entry Test</strong>.
         </p>
-        <div className="flex gap-3 justify-center">
+        <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100 mb-6 text-left">
+          <p className="font-bold text-blue-800 text-sm mb-2">📋 What happens next?</p>
+          <ol className="text-xs text-blue-700 space-y-1.5 list-decimal list-inside">
+            <li>Admin reviews and approves your registration</li>
+            <li>You take the Entry Test at <strong>/entry-test</strong></li>
+            <li>Score 70%+ to pass and get your Student ID Card</li>
+            <li>Set your password and access the Student Portal</li>
+          </ol>
+        </div>
+        <div className="flex gap-3 justify-center flex-wrap">
           <Link to="/" style={{ background:B }} className="text-white font-bold px-6 py-3 rounded-full text-sm hover:opacity-90">Back to Home</Link>
-          <Link to="/courses" style={{ border:`2px solid ${B}`,color:B }} className="font-bold px-6 py-3 rounded-full text-sm bg-white hover:bg-blue-50">View Courses</Link>
+          <Link to="/entry-test" style={{ border:`2px solid ${B}`,color:B }} className="font-bold px-6 py-3 rounded-full text-sm bg-white hover:bg-blue-50">Take Entry Test</Link>
         </div>
       </div>
     </div>

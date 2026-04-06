@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { fetchCourses, addCourse, updateCourse } from '../../store/slices/coursesSlice'
+import { fetchCourses, addCourse, updateCourse, deleteCourse } from '../../store/slices/coursesSlice'
 import AdminLayout from '../../components/AdminLayout'
 import Modal from '../../components/Modal'
 import toast from 'react-hot-toast'
@@ -12,22 +12,37 @@ const EMPTY = { name:'', category:'Development', status:'open', description:'', 
 export default function AdminCourses() {
   const dispatch = useDispatch()
   const { list, loading } = useSelector(s => s.courses)
-  const [modal, setModal]   = useState(null)
-  const [form, setForm]     = useState(EMPTY)
-  const [imgFile, setImgFile] = useState(null)
+  const [modal,      setModal]      = useState(null)
+  const [form,       setForm]       = useState(EMPTY)
+  const [imgFile,    setImgFile]    = useState(null)
   const [imgPreview, setImgPreview] = useState(null)
-  const [saving, setSaving] = useState(false)
+  const [saving,     setSaving]     = useState(false)
+  const [deleting,   setDeleting]   = useState(null)
 
   useEffect(() => { dispatch(fetchCourses()) }, [dispatch])
 
   const openAdd  = () => { setForm(EMPTY); setImgFile(null); setImgPreview(null); setModal('add') }
-  const openEdit = (c) => { setForm({ name:c.name, category:c.category||'General', status:c.status, description:c.description||'', duration:c.duration||'', is_top:c.is_top||false }); setImgPreview(c.thumbnail_url||null); setImgFile(null); setModal(c) }
+  const openEdit = (c) => {
+    setForm({ name:c.name, category:c.category||'General', status:c.status, description:c.description||'', duration:c.duration||'', is_top:c.is_top||false })
+    setImgPreview(c.thumbnail_url || null)
+    setImgFile(null)
+    setModal(c)
+  }
 
   const handleImg = (e) => {
     const file = e.target.files[0]
     if (!file) return
     setImgFile(file)
     setImgPreview(URL.createObjectURL(file))
+  }
+
+  const handleDelete = async (id, name) => {
+    if (!window.confirm(`Delete "${name}"? This cannot be undone.`)) return
+    setDeleting(id)
+    const result = await dispatch(deleteCourse(id))
+    setDeleting(null)
+    if (result.error) { toast.error('Delete failed: ' + result.error.message); return }
+    toast.success('Course deleted!')
   }
 
   const handleSave = async (e) => {
@@ -37,7 +52,11 @@ export default function AdminCourses() {
     if (modal === 'add') {
       result = await dispatch(addCourse({ course: form, imageFile: imgFile }))
     } else {
-      result = await dispatch(updateCourse({ id: modal.id, updates: { name: form.name, status: form.status, category: form.category, description: form.description, duration: form.duration, is_top: form.is_top } }))
+      result = await dispatch(updateCourse({
+        id: modal.id,
+        updates: { name:form.name, status:form.status, category:form.category, description:form.description, duration:form.duration, is_top:form.is_top },
+        imageFile: imgFile,
+      }))
     }
     setSaving(false)
     if (result.error) { toast.error('Failed to save'); return }
@@ -55,7 +74,9 @@ export default function AdminCourses() {
           </div>
           <button onClick={openAdd} style={{ background:B }}
             className="text-white font-semibold px-5 py-2.5 rounded-xl text-sm hover:opacity-90 transition-opacity flex items-center gap-2">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
+            </svg>
             Add Course
           </button>
         </div>
@@ -79,8 +100,8 @@ export default function AdminCourses() {
                   <tr key={c.id} className="border-t border-gray-50 hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3">
                       {c.thumbnail_url
-                        ? <img src={c.thumbnail_url} alt={c.name} className="w-12 h-10 object-cover rounded-lg" />
-                        : <div className="w-12 h-10 rounded-lg flex items-center justify-center text-white text-xs font-bold" style={{ background:B }}>{c.name.charAt(0)}</div>
+                        ? <img src={c.thumbnail_url} alt={c.name} className="w-14 h-10 object-cover rounded-lg" />
+                        : <div className="w-14 h-10 rounded-lg flex items-center justify-center text-white text-xs font-bold" style={{ background:B }}>{c.name.charAt(0)}</div>
                       }
                     </td>
                     <td className="px-4 py-3 font-semibold text-gray-800 max-w-[180px]">
@@ -98,8 +119,17 @@ export default function AdminCourses() {
                     </td>
                     <td className="px-4 py-3 text-center">{c.is_top ? '⭐' : '—'}</td>
                     <td className="px-4 py-3">
-                      <button onClick={() => openEdit(c)} style={{ color:B }}
-                        className="text-xs font-semibold hover:underline">Edit</button>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => openEdit(c)} style={{ color:B }}
+                          className="text-xs font-semibold hover:underline">Edit</button>
+                        <span className="text-gray-300">|</span>
+                        <button onClick={() => handleDelete(c.id, c.name)}
+                          disabled={deleting === c.id}
+                          className="text-xs font-semibold hover:underline disabled:opacity-40"
+                          style={{ color:'#ef4444' }}>
+                          {deleting === c.id ? '...' : 'Delete'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -159,24 +189,29 @@ export default function AdminCourses() {
                 </label>
               </div>
             </div>
-            {modal === 'add' && (
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Thumbnail Image</label>
-                <label className="flex items-center gap-3 border-2 border-dashed border-gray-200 rounded-xl p-3 cursor-pointer hover:border-blue-400 transition-colors">
-                  {imgPreview
-                    ? <img src={imgPreview} alt="preview" className="w-16 h-12 object-cover rounded-lg" />
-                    : <div className="w-16 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                      </div>
-                  }
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">{imgFile ? imgFile.name : 'Click to upload thumbnail'}</p>
-                    <p className="text-xs text-gray-400">jpg, png, webp — recommended 400×250px</p>
-                  </div>
-                  <input type="file" accept="image/*" className="hidden" onChange={handleImg} />
-                </label>
-              </div>
-            )}
+
+            {/* Thumbnail — works for both add and edit */}
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">
+                Thumbnail Image {modal !== 'add' && <span className="text-gray-400 font-normal">(leave empty to keep current)</span>}
+              </label>
+              <label className="flex items-center gap-3 border-2 border-dashed border-gray-200 rounded-xl p-3 cursor-pointer hover:border-blue-400 transition-colors">
+                {imgPreview
+                  ? <img src={imgPreview} alt="preview" className="w-16 h-12 object-cover rounded-lg flex-shrink-0" />
+                  : <div className="w-16 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 flex-shrink-0">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                      </svg>
+                    </div>
+                }
+                <div>
+                  <p className="text-sm font-medium text-gray-700">{imgFile ? imgFile.name : 'Click to upload thumbnail'}</p>
+                  <p className="text-xs text-gray-400">jpg, png, webp — recommended 400×250px</p>
+                </div>
+                <input type="file" accept="image/*" className="hidden" onChange={handleImg} />
+              </label>
+            </div>
+
             <button type="submit" disabled={saving} style={{ background:B }}
               className="w-full text-white py-3 rounded-xl font-bold text-sm disabled:opacity-60 hover:opacity-90 transition-opacity">
               {saving ? 'Saving...' : modal==='add' ? 'Add Course' : 'Save Changes'}
