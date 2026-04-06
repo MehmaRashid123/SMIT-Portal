@@ -2,7 +2,10 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import { supabase } from '../../lib/supabaseClient'
 
 export const fetchCourses = createAsyncThunk('courses/fetch', async (_, { rejectWithValue }) => {
-  const { data, error } = await supabase.from('courses').select('*').order('category', { ascending: true })
+  const { data, error } = await supabase
+    .from('courses').select('*')
+    .neq('status', 'deleted')
+    .order('category', { ascending: true })
   if (error) return rejectWithValue(error.message)
   return data
 })
@@ -37,7 +40,8 @@ export const updateCourse = createAsyncThunk('courses/update', async ({ id, upda
 })
 
 export const deleteCourse = createAsyncThunk('courses/delete', async (id, { rejectWithValue }) => {
-  const { error } = await supabase.from('courses').delete().eq('id', id)
+  // Soft delete — set status to 'deleted' to avoid FK constraint errors
+  const { error } = await supabase.from('courses').update({ status: 'deleted' }).eq('id', id)
   if (error) return rejectWithValue(error.message)
   return id
 })
