@@ -16,7 +16,7 @@ export default function AdminTeachers() {
   const [loading,   setLoading]   = useState(true)
   const [modal,     setModal]     = useState(false)       // add teacher
   const [slotModal, setSlotModal] = useState(null)        // teacher id for slot mgmt
-  const [form,      setForm]      = useState({ name:'', username:'', password:'', course_id:'', campus:'' })
+  const [form, setForm] = useState({ name:'', username:'', password:'', course_id:'', campus:'', timing:'', total_seats:30 })
   const [slotForm,  setSlotForm]  = useState({ timing:'', total_seats:30 })
   const [saving,    setSaving]    = useState(false)
 
@@ -39,18 +39,40 @@ export default function AdminTeachers() {
 
   const handleAdd = async (e) => {
     e.preventDefault(); setSaving(true)
-    const { error } = await supabase.from('teachers').insert([{
+
+    // Check duplicate username
+    const { data: existing } = await supabase
+      .from('teachers').select('id').eq('username', form.username).maybeSingle()
+    if (existing) {
+      toast.error('Username already taken. Please choose another.')
+      setSaving(false); return
+    }
+
+    const { data: teacher, error } = await supabase.from('teachers').insert([{
       name:      form.name,
       username:  form.username,
       password:  form.password,
       course_id: form.course_id || null,
       campus:    form.campus    || null,
-    }])
+    }]).select().single()
+
+    if (error) { toast.error('Failed: ' + error.message); setSaving(false); return }
+
+    // If timing provided, create slot immediately
+    if (form.timing && form.course_id) {
+      await supabase.from('slots').insert([{
+        teacher_id:  teacher.id,
+        course_id:   form.course_id,
+        campus:      form.campus || null,
+        timing:      form.timing,
+        total_seats: Number(form.total_seats) || 30,
+      }])
+    }
+
     setSaving(false)
-    if (error) { toast.error('Failed: ' + error.message); return }
     toast.success('Teacher added!')
     setModal(false)
-    setForm({ name:'', username:'', password:'', course_id:'', campus:'' })
+    setForm({ name:'', username:'', password:'', course_id:'', campus:'', timing:'', total_seats:30 })
     fetchAll()
   }
 
@@ -144,7 +166,7 @@ export default function AdminTeachers() {
 
       {/* ── Add Teacher Modal ── */}
       {modal && (
-        <Modal title="Add New Teacher" onClose={() => { setModal(false); setForm({ name:'', username:'', password:'', course_id:'', campus:'' }) }}>
+        <Modal title="Add New Teacher" onClose={() => { setModal(false); setForm({ name:'', username:'', password:'', course_id:'', campus:'', timing:'', total_seats:30 }) }}>
           <form onSubmit={handleAdd} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Full Name *</label>
@@ -182,7 +204,21 @@ export default function AdminTeachers() {
                 {campuses.map(c=><option key={c.id} value={c.name}>{c.name} — {c.city}</option>)}
               </select>
             </div>
-            <p className="text-xs text-gray-400">After adding teacher, use "Manage Slots" to add class timings & seat capacity.</p>
+            <div className="border-t border-gray-100 pt-3">
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Class Slot (Optional — can add later)</p>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Timing</label>
+                <input placeholder="e.g. Mon/Wed  9:00 AM – 11:00 AM" className={inp} value={form.timing}
+                  onChange={e=>setForm(f=>({...f,timing:e.target.value}))}
+                  onFocus={e=>e.target.style.borderColor=B} onBlur={e=>e.target.style.borderColor='#e5e7eb'}/>
+              </div>
+              <div className="mt-3">
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Total Seats</label>
+                <input type="number" min={1} max={200} placeholder="30" className={inp} value={form.total_seats}
+                  onChange={e=>setForm(f=>({...f,total_seats:e.target.value}))}
+                  onFocus={e=>e.target.style.borderColor=B} onBlur={e=>e.target.style.borderColor='#e5e7eb'}/>
+              </div>
+            </div>
             <button type="submit" disabled={saving} style={{ background:B }}
               className="w-full text-white py-3 rounded-xl font-bold text-sm disabled:opacity-60">
               {saving ? 'Adding...' : 'Add Teacher'}
