@@ -1,82 +1,79 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useSelector } from 'react-redux'
+import AdminLayout from '../../components/AdminLayout'
 import { supabase } from '../../lib/supabaseClient'
 import toast from 'react-hot-toast'
 
+const B = '#0B73B7'
+
 export default function AdminSettings() {
   const { user } = useSelector(s => s.auth)
-  const [resetForm, setResetForm] = useState({ oldPassword: '', newPassword: '' })
-  const [newAdmin, setNewAdmin] = useState({ name: '', username: '', password: '' })
-  const [saving, setSaving] = useState(false)
-  const [addingSaving, setAddingSaving] = useState(false)
+  const [resetForm, setResetForm] = useState({ oldPassword:'', newPassword:'' })
+  const [newAdmin,  setNewAdmin]  = useState({ name:'', username:'', password:'' })
+  const [saving,    setSaving]    = useState(false)
+  const [adding,    setAdding]    = useState(false)
 
   const handleReset = async (e) => {
-    e.preventDefault()
-    setSaving(true)
+    e.preventDefault(); setSaving(true)
     const { data, error } = await supabase.from('admins').select('*').eq('id', user.id).eq('password', resetForm.oldPassword).single()
-    if (error || !data) { toast.error('Old password is incorrect'); setSaving(false); return }
-    const { error: updateErr } = await supabase.from('admins').update({ password: resetForm.newPassword }).eq('id', user.id)
+    if (error || !data) { toast.error('Old password incorrect'); setSaving(false); return }
+    const { error: upErr } = await supabase.from('admins').update({ password: resetForm.newPassword }).eq('id', user.id)
     setSaving(false)
-    if (updateErr) { toast.error('Failed to update password'); return }
+    if (upErr) { toast.error('Failed'); return }
     toast.success('Password updated!')
-    setResetForm({ oldPassword: '', newPassword: '' })
+    setResetForm({ oldPassword:'', newPassword:'' })
   }
 
   const handleAddAdmin = async (e) => {
-    e.preventDefault()
-    setAddingSaving(true)
+    e.preventDefault(); setAdding(true)
     const { error } = await supabase.from('admins').insert([newAdmin])
-    setAddingSaving(false)
-    if (error) { toast.error('Failed to add admin: ' + error.message); return }
+    setAdding(false)
+    if (error) { toast.error('Failed: ' + error.message); return }
     toast.success('Admin added!')
-    setNewAdmin({ name: '', username: '', password: '' })
+    setNewAdmin({ name:'', username:'', password:'' })
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50 py-10 px-4">
-      <div className="max-w-2xl mx-auto space-y-8">
-        <h1 className="text-2xl font-bold text-gray-800">Admin Settings</h1>
+  const inp = "w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none transition-all"
 
-        {/* Reset Password */}
-        <div className="bg-white rounded-xl shadow p-6 border border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Reset Password</h2>
+  return (
+    <AdminLayout>
+      <div className="p-6 max-w-2xl mx-auto space-y-8">
+        <h1 className="text-2xl font-extrabold text-gray-900">Admin Settings</h1>
+
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <h2 className="font-bold text-gray-800 mb-5 text-lg">Reset Password</h2>
           <form onSubmit={handleReset} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Old Password</label>
-              <input required type="password" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" value={resetForm.oldPassword} onChange={e => setResetForm(f => ({ ...f, oldPassword: e.target.value }))} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-              <input required type="password" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" value={resetForm.newPassword} onChange={e => setResetForm(f => ({ ...f, newPassword: e.target.value }))} />
-            </div>
-            <button type="submit" disabled={saving} className="bg-green-700 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-600 transition disabled:opacity-60">
+            <div><label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Old Password</label>
+              <input required type="password" className={inp} value={resetForm.oldPassword}
+                onChange={e=>setResetForm(f=>({...f,oldPassword:e.target.value}))}
+                onFocus={e=>e.target.style.borderColor=B} onBlur={e=>e.target.style.borderColor='#e5e7eb'}/></div>
+            <div><label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">New Password</label>
+              <input required type="password" className={inp} value={resetForm.newPassword}
+                onChange={e=>setResetForm(f=>({...f,newPassword:e.target.value}))}
+                onFocus={e=>e.target.style.borderColor=B} onBlur={e=>e.target.style.borderColor='#e5e7eb'}/></div>
+            <button type="submit" disabled={saving} style={{ background:B }}
+              className="text-white px-6 py-2.5 rounded-xl font-bold text-sm disabled:opacity-60 hover:opacity-90 transition-opacity">
               {saving ? 'Updating...' : 'Change Password'}
             </button>
           </form>
         </div>
 
-        {/* Add New Admin */}
-        <div className="bg-white rounded-xl shadow p-6 border border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Add New Admin</h2>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <h2 className="font-bold text-gray-800 mb-5 text-lg">Add New Admin</h2>
           <form onSubmit={handleAddAdmin} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-              <input required className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" value={newAdmin.name} onChange={e => setNewAdmin(f => ({ ...f, name: e.target.value }))} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-              <input required className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" value={newAdmin.username} onChange={e => setNewAdmin(f => ({ ...f, username: e.target.value }))} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-              <input required type="password" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" value={newAdmin.password} onChange={e => setNewAdmin(f => ({ ...f, password: e.target.value }))} />
-            </div>
-            <button type="submit" disabled={addingSaving} className="bg-green-700 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-600 transition disabled:opacity-60">
-              {addingSaving ? 'Adding...' : 'Add Admin'}
+            {[['Name','text',newAdmin.name,'name'],['Username','text',newAdmin.username,'username'],['Password','password',newAdmin.password,'password']].map(([label,type,val,key])=>(
+              <div key={key}><label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">{label}</label>
+                <input required type={type} className={inp} value={val}
+                  onChange={e=>setNewAdmin(f=>({...f,[key]:e.target.value}))}
+                  onFocus={e=>e.target.style.borderColor=B} onBlur={e=>e.target.style.borderColor='#e5e7eb'}/></div>
+            ))}
+            <button type="submit" disabled={adding} style={{ background:B }}
+              className="text-white px-6 py-2.5 rounded-xl font-bold text-sm disabled:opacity-60 hover:opacity-90 transition-opacity">
+              {adding ? 'Adding...' : 'Add Admin'}
             </button>
           </form>
         </div>
       </div>
-    </div>
+    </AdminLayout>
   )
 }

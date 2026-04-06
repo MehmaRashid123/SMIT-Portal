@@ -2,13 +2,22 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import { supabase } from '../../lib/supabaseClient'
 
 export const fetchCourses = createAsyncThunk('courses/fetch', async (_, { rejectWithValue }) => {
-  const { data, error } = await supabase.from('courses').select('*').order('created_at', { ascending: false })
+  const { data, error } = await supabase.from('courses').select('*').order('category', { ascending: true })
   if (error) return rejectWithValue(error.message)
   return data
 })
 
-export const addCourse = createAsyncThunk('courses/add', async (course, { rejectWithValue }) => {
-  const { data, error } = await supabase.from('courses').insert([course]).select().single()
+export const addCourse = createAsyncThunk('courses/add', async ({ course, imageFile }, { rejectWithValue }) => {
+  let thumbnail_url = null
+  if (imageFile) {
+    const fname = `${Date.now()}-${imageFile.name}`
+    const { error: upErr } = await supabase.storage.from('course-thumbnails').upload(fname, imageFile)
+    if (!upErr) {
+      const { data } = supabase.storage.from('course-thumbnails').getPublicUrl(fname)
+      thumbnail_url = data.publicUrl
+    }
+  }
+  const { data, error } = await supabase.from('courses').insert([{ ...course, thumbnail_url }]).select().single()
   if (error) return rejectWithValue(error.message)
   return data
 })
