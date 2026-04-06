@@ -58,6 +58,15 @@ export default function EntryTest() {
       toast.error('Your registration is not approved yet. Please wait for admin approval.')
       setVerifying(false); return
     }
+    // Check test date — student cannot take test before scheduled date
+    if (reg.test_date) {
+      const today    = new Date().toISOString().split('T')[0]
+      const testDate = reg.test_date
+      if (today < testDate) {
+        toast.error(`Your entry test is scheduled for ${testDate}. You cannot take it before that date.`)
+        setVerifying(false); return
+      }
+    }
     // Check if already attempted
     const { data: existing } = await supabase
       .from('entry_test_results')

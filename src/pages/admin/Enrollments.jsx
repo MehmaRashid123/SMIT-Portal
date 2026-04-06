@@ -31,6 +31,8 @@ export default function AdminEnrollments() {
     if (result.error) { toast.error('Failed: ' + result.error.message); return }
     toast.success('Student enrolled!')
     setModal(false); setForm({ student_id:'', course_id:'', batch:'', campus:'', city:'' })
+    // Re-fetch to get full joined data (students + courses)
+    dispatch(fetchAllEnrollments())
   }
 
   const inp = "w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none transition-all bg-white"
