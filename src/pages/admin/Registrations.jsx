@@ -120,23 +120,23 @@ export default function AdminRegistrations() {
 
   return (
     <AdminLayout>
-      <div className="p-6 max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+      <div className="p-4 sm:p-6 max-w-6xl mx-auto">
+        <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
           <div>
-            <h1 className="text-2xl font-extrabold text-gray-900">Registrations</h1>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900">Registrations</h1>
             <p className="text-sm text-gray-400 mt-0.5">{regs.length} total applications</p>
           </div>
           <div className="flex gap-2 flex-wrap items-center">
             {checkedIds.length>0&&(
               <button onClick={()=>setBulkModal(true)}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center gap-1.5"
+                className="px-3 py-2 rounded-xl text-xs font-bold text-white flex items-center gap-1.5"
                 style={{background:"#0e9f6e"}}>
-                ✓ Approve Selected ({checkedIds.length})
+                ✓ Approve ({checkedIds.length})
               </button>
             )}
             {["all","pending","approved","rejected"].map(f=>(
               <button key={f} onClick={()=>{setFilter(f);setCheckedIds([])}}
-                className="px-4 py-2 rounded-xl text-xs font-bold capitalize transition-all"
+                className="px-3 py-2 rounded-xl text-xs font-bold capitalize transition-all"
                 style={filter===f?{background:B,color:"#fff"}:{background:"#f3f4f6",color:"#6b7280"}}>
                 {f} ({f==="all"?regs.length:regs.filter(r=>r.status===f||(f==="pending"&&!r.status)).length})
               </button>
@@ -144,22 +144,23 @@ export default function AdminRegistrations() {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-3 gap-3 mb-6">
           {[
-            {label:"Pending",val:regs.filter(r=>r.status==="pending"||!r.status).length,color:"#f59e0b",bg:"#fffbeb"},
-            {label:"Approved",val:regs.filter(r=>r.status==="approved").length,color:"#0e9f6e",bg:"#e8faf4"},
-            {label:"Rejected",val:regs.filter(r=>r.status==="rejected").length,color:"#ef4444",bg:"#fff5f5"},
+            {label:"Pending",val:regs.filter(r=>r.status==="pending"||!r.status).length,color:"#f59e0b"},
+            {label:"Approved",val:regs.filter(r=>r.status==="approved").length,color:"#0e9f6e"},
+            {label:"Rejected",val:regs.filter(r=>r.status==="rejected").length,color:"#ef4444"},
           ].map(s=>(
-            <div key={s.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 text-center">
-              <p className="text-3xl font-extrabold" style={{color:s.color}}>{s.val}</p>
-              <p className="text-sm text-gray-400 mt-1">{s.label}</p>
+            <div key={s.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
+              <p className="text-2xl sm:text-3xl font-extrabold" style={{color:s.color}}>{s.val}</p>
+              <p className="text-xs text-gray-400 mt-1">{s.label}</p>
             </div>
           ))}
         </div>
 
         {loading?<div className="text-center py-20 text-gray-400">Loading...</div>:(
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[700px]">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
                   <th className="px-4 py-3 w-10">
@@ -204,6 +205,7 @@ export default function AdminRegistrations() {
                 )})}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>
