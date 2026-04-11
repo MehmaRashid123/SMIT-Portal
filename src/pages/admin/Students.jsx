@@ -4,7 +4,7 @@ import { fetchStudents, uploadStudents } from '../../store/slices/studentsSlice'
 import AdminLayout from '../../components/AdminLayout'
 import Modal from '../../components/Modal'
 import { supabase } from '../../lib/supabaseClient'
-import * as XLSX from 'xlsx'
+import * as XLSX from 'xlsx-js-style'
 import toast from 'react-hot-toast'
 
 const B = '#0B73B7'
@@ -38,20 +38,27 @@ export default function AdminStudents() {
     setUploading(true)
     const reader = new FileReader()
     reader.onload = async (evt) => {
-      const wb = XLSX.read(evt.target.result, { type:'binary' })
-      const ws = wb.Sheets[wb.SheetNames[0]]
+      const wb   = XLSX.read(evt.target.result, { type:'binary' })
+      const ws   = wb.Sheets[wb.SheetNames[0]]
       const rows = XLSX.utils.sheet_to_json(ws)
+
       const students = rows.map(r => ({
-        name: r.name || r.Name || '',
-        cnic: String(r.cnic || r.CNIC || ''),
-        roll_number: String(r.roll_number || r['Roll Number'] || r.RollNumber || ''),
-        phone: r.phone || r.Phone || '',
-      })).filter(s => s.cnic && s.roll_number)
-      if (!students.length) { toast.error('No valid rows. Columns: name, cnic, roll_number'); setUploading(false); return }
+        name:        r.name        || r.Name        || '',
+        cnic:        String(r.cnic || r.CNIC        || '').trim(),
+        roll_number: String(r.roll_number || r['Roll Number'] || r.RollNumber || '').trim(),
+        phone:       String(r.phone || r.Phone      || '').trim(),
+      })).filter(s => s.name && s.cnic)
+
+      if (!students.length) {
+        toast.error('No valid rows found. Required columns: name, cnic, roll_number, phone')
+        setUploading(false); return
+      }
+
       const result = await dispatch(uploadStudents(students))
       setUploading(false)
-      if (result.error) { toast.error('Upload failed'); return }
+      if (result.error) { toast.error('Upload failed: ' + result.payload); return }
       toast.success(`${students.length} students uploaded!`)
+      dispatch(fetchStudents())
     }
     reader.readAsBinaryString(file)
     e.target.value = ''
@@ -79,17 +86,6 @@ export default function AdminStudents() {
     setDetailData({ attendance: att||[], leaves: leaves||[], enrollments: enroll||[] })
   }
 
-  const exportExcel = () => {
-    const data = filtered.map((s,i) => ({
-      '#': i+1, Name: s.name, CNIC: s.cnic, 'Roll Number': s.roll_number,
-      Phone: s.phone||'', Status: s.status||'active', Registered: s.password?'Yes':'No',
-    }))
-    const ws = XLSX.utils.json_to_sheet(data)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Students')
-    XLSX.writeFile(wb, 'SMIT_Students.xlsx')
-    toast.success('Exported!')
-  }
 
   const filtered = list.filter(s => {
     const matchSearch = s.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -117,13 +113,6 @@ export default function AdminStudents() {
             <p className="text-sm text-gray-400 mt-0.5">{list.length} total students</p>
           </div>
           <div className="flex gap-2 flex-wrap">
-            <button onClick={exportExcel}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 bg-white hover:bg-gray-50 transition-colors">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-              </svg>
-              Export Excel
-            </button>
             <button onClick={() => fileRef.current.click()} disabled={uploading}
               style={{ background:B }}
               className="text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-60 flex items-center gap-2">
